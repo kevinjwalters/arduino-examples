@@ -1,13 +1,13 @@
 /*
-  Peripheral power test v1.0
+  Peripheral power test v1.2
 
   This program sets D8 high.
   The onboard LED is flashed three times to signify the start of the test
   a) RGB pixels are illuminated incrementally on D9 using the WS2812B RGB protocol.
   b) Servo will sweep between 0 and 180 at various speeds controlled using D10.
   
-  The actions a) or b) run together but for testing its recommened to
-  connect/power only one peripheral at a time.
+  The actions a) or b) run together but for testing it's best to only
+  connect/power one peripheral at a time to keep current to reasonable level
 
   Copyright (c) 2024 Kevin J. Walters
 
@@ -29,6 +29,10 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
 */
+
+// Other "ports"
+// https://github.com/kevinjwalters/circuitpython-examples/blob/master/pico/peripheral-power-test.py
+// https://github.com/kevinjwalters/micropython-examples/blob/master/microbit/peripheral-power-test.py
 
 
 #include <Servo.h>
@@ -76,6 +80,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(HIGH_PIN, OUTPUT);
+  digitalWrite(HIGH_PIN, HIGH);  // Set high
   pixels.begin();
   pixels_off();
   if (false) {
@@ -95,8 +100,8 @@ void setup() {
 
 
 void loop() {
-  // Flash onboard LED three times to signify start
-  for (int idx = 0; idx < 3; idx++) {
+  // Flash onboard LED five times to signify start
+  for (int idx = 0; idx < 5; idx++) {
     digitalWrite(LED_BUILTIN, HIGH);  // onboard LED
     delay(1000);  // 1000ms = 1s
     digitalWrite(LED_BUILTIN, LOW);
@@ -118,8 +123,6 @@ void loop() {
     unsigned int step_pause_us = 0;
     if (step_pause_ms < 16) {
       step_pause_us = (unsigned long)degree_step * duration_s * 1000 * 1000 / reps / 180;
-      Serial.println(step_pause_ms);
-      Serial.println(step_pause_us);
     }
     for (int swing = 0; swing < reps; swing++) {      
       int pos = start_pos;
@@ -154,6 +157,7 @@ void loop() {
     // For a ring of 12 every 4 pixels double the number of servo movements
     if (idx % SERVO_SPEED_LOOPS == SERVO_SPEED_LOOPS - 1) {
       reps *= 2;
+      degree_step *= 2;
     }
   }
   pixels_off();
