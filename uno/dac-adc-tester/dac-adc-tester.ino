@@ -1,5 +1,5 @@
 /*
-  dac-adc-tester v1.1
+  dac-adc-tester v1.3
   Generate waveforms on DAC and send serial commands to remote Arduino to measure them
  
   Copyright (c) 2024 Kevin J. Walters
@@ -30,13 +30,17 @@ const int TRI_WAVE_MAX = 4095;
 const int SQUARE_LOW_COUNT = 50;
 const int SQUARE_HIGH_COUNT = 50;
 
-char rx_buffer[81] = { '\0' };
+// 50ms should be fine here but it isn't...
+const unsigned long RESPONSE_CHAR_WAIT_MS = 50;
+
+char buffer[81] = { '\0' };  // Needs to hold 10 digits, 5 digits, 1 digit, EOL
 
 
 void setup() {
   Serial.begin(115200);
   Serial1.begin(38400);  // this is TX (D0) & RX (D1)
-  
+  // Serial1.setTimeout(RESPONSE_CHAR_WAIT_MS);  // timeout for reads in ms
+
   analogWriteResolution(12);  // R4 DAC is 12bit
   // pinMode() is for the digital only input/output, setting may interfere with DAC
   // See https://forum.arduino.cc/t/arduino-zero-dac-analog-output-cutoff-below-the-rail-voltage/505268/4
@@ -47,6 +51,20 @@ void setup() {
   }
 }
 
+// Unclear if setTimeout works on Serial1 (Dec 2024)
+int read_serial1() {
+  int c = -1;
+  unsigned long start_ms = millis();
+
+  // TODO - safe time diff 
+  while (millis() - start_ms <= RESPONSE_CHAR_WAIT_MS) {
+    if (Serial1.available() > 0) {
+      c = Serial1.read();
+      break;
+    }
+  }
+  return c;
+}
 
 void loop() {
   analogWrite(DAC_A0, 0);  // DAC output to 0V
@@ -63,25 +81,25 @@ void loop() {
     while (true) {
       analogWrite(DAC_A0, output);
       Serial1.write("R");
-      if (Serial1.available() > 0) {
-        // Pad with leading 0s for constant width
-        size_t idx = snprintf(rx_buffer, sizeof(rx_buffer), "%010lu,", micros());
-        while (Serial1.available() > 0) {
-          int rx_char = Serial1.read();
-          if (rx_char < 0 || rx_char == '\n') {
-            rx_buffer[idx] = '\0';
-          } else {
-            rx_buffer[idx] = rx_char;
-          }
-          ++idx;
-          if (idx >= sizeof(rx_buffer) - 1) {
-            // At the last character in array, leave this undisturbed as a NUL
-            // and conclude reading
-            break;
-          }
+      // Pad with leading 0s for constant width
+      size_t idx = snprintf(buffer, sizeof(buffer), "%010lu,", micros());
+      int rx_char = read_serial1();
+      do { 
+        if (rx_char < 0 || rx_char == '\n') {
+          buffer[idx] = '\0';
+          break;
+        } else {
+          buffer[idx] = rx_char;
         }
-        Serial.println(rx_buffer);
-      }
+        ++idx;
+        if (idx >= sizeof(buffer) - 1) {
+          // At the last character in array, leave this undisturbed as a NUL
+          // and conclude reading
+          break;
+        }
+        rx_char = read_serial1();
+      } while (true);
+      Serial.println(buffer);
       ++count;
 
       // Change the output variable for triangle or square waveform
