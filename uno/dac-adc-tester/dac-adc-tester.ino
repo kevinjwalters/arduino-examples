@@ -49,6 +49,7 @@ void setup() {
 
 
 void loop() {
+  analogWrite(DAC_A0, 0);  // DAC output to 0V
   delay(10'000);
 
   // Output triangle wave
