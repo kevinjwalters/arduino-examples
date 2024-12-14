@@ -1,5 +1,5 @@
 /*
-  dac-adc-tester v1.0
+  dac-adc-tester v1.1
   Generate waveforms on DAC and send serial commands to remote Arduino to measure them
  
   Copyright (c) 2024 Kevin J. Walters
@@ -35,7 +35,7 @@ char rx_buffer[81] = { '\0' };
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(115200);  // this is TX (D0) & RX (D1)
+  Serial1.begin(38400);  // this is TX (D0) & RX (D1)
   
   analogWriteResolution(12);  // R4 DAC is 12bit
   // pinMode() is for the digital only input/output, setting may interfere with DAC

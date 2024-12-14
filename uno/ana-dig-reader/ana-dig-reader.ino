@@ -1,5 +1,5 @@
 /*
-  ana-dig-reader v1.0
+  ana-dig-reader v1.1
   Reads analogue and digital values in response to serial commands over D9/D8
 
   Copyright (c) 2024 Kevin J. Walters
@@ -37,7 +37,7 @@ char tx_buffer[81] = { '\0' };
 
 void setup() {
   Serial.begin(115200);
-  SwSerial.begin(115200);
+  SwSerial.begin(38400);
 #if defined(ARDUINO_UNOR4_MINIMA) || defined(ARDUINO_UNOR4_WIFI)
   analogReadResolution(14);  // R4 has 14bit ADC
 #endif
