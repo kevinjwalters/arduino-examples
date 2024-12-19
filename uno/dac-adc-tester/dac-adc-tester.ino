@@ -38,7 +38,7 @@ char buffer[81] = { '\0' };  // Needs to hold 10 digits, 5 digits, 1 digit, EOL
 
 void setup() {
   Serial.begin(115200);
-  Serial1.begin(38400);  // this is TX (D0) & RX (D1)
+  Serial1.begin(38400);  // this is TX (D1) & RX (D0)
   // Serial1.setTimeout(RESPONSE_CHAR_WAIT_MS);  // timeout for reads in ms
 
   analogWriteResolution(12);  // R4 DAC is 12bit
