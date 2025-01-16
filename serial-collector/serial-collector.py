@@ -1,10 +1,10 @@
-### adc-test-collector v1.0
+### serial-collector v1.1
 ### Read data from multiple serial ports applying a timestamp
-### Intended for use with adc-test-1
+### A "fork" of adc-test-collector.py
 
 ### MIT License
 
-### Copyright (c) 2020 Kevin J. Walters
+### Copyright (c) 2020, 2025 Kevin J. Walters
 
 ### Permission is hereby granted, free of charge, to any person obtaining a copy
 ### of this software and associated documentation files (the "Software"), to deal
@@ -39,31 +39,21 @@ ports = args if args else ("COM14", "COM30", "COM31", "COM18")
 if verbose:
     print("Opening:", ports)
 
-serials = [serial.Serial(port=p, baudrate="115200", timeout=5) for p in ports]
-
-synced = [False] * len(serials)
-
-# The fixed number of characters for a line including CRLF
-TOTAL_LINE_CHARS = 80
+#serials = [serial.Serial(port=p, baudrate="115200", timeout=5) for p in ports]
+serials = [serial.Serial(port=p,  baudrate="250000", timeout=0.2) for p in ports]
 
 data = []
 
 try:
     while True:
         for idx, ser in enumerate(serials):
-            if not ser.in_waiting:
+            ### Timestamp is fetched immediately after checking for waiting bytes
+            bytes_to_read = ser.in_waiting
+            time_ns = time.time_ns()
+            if bytes_to_read <= 0:
                 continue
-            line = ser.read(TOTAL_LINE_CHARS)
-            if not synced[idx]:
-                try:
-                    lf_pos = line.index(b"\x0a")
-                    if lf_pos != TOTAL_LINE_CHARS - 1:  ### read more unless lucky
-                        line = line[lf_pos + 1:] + ser.read(lf_pos + 1)
-                    synced[idx] = True
-                except ValueError:
-                    continue
-
-            data.append(bytes(f'"{ports[idx]}",{time.time_ns()},', "ascii") + line)
+            complete_line = ser.read_until()
+            data.append(bytes(f'"{ports[idx]}",{time_ns},', "ascii") + complete_line)
             #print(ports[idx], time.time_ns(), line.decode("ascii"), end="")
 
 except KeyboardInterrupt:
