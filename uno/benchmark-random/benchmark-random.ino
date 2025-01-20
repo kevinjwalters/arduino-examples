@@ -27,17 +27,15 @@
 // for generating true random number (TRNG) part of SCE5 module
 
 // Critical to have negative value at end terminating values
+const char *VERSION = "1.0";
 const int REPS_FOR_RANDOM = 5;
 long pauses_ms[] = {1000, 500, 250, 100, 50, 25, 10, 5, 2, 1, 0, -1};
 unsigned long seed = 1234UL;
 
-void setup() {
-  while (!Serial) {};
-  Serial.begin(115200);
-
-  Serial.println("Seed=None");
-  benchmark_random(REPS_FOR_RANDOM, pauses_ms);
-  Serial.println();
+void serial_print_header(void) {
+  Serial.print("Benchmark Random() version=");
+  Serial.print(VERSION);
+  Serial.print(", seed=");
 }
 
 // Run random repeats time with delays from pauses_ms array
@@ -58,10 +56,19 @@ void benchmark_random(int repeats, long pauses_ms[]) {
       random_duration[rep] = t2 - t1;
     }
 
+    // Calculate arithmetic mean
+    float avg = 0.0;
+    for (int rep=0; rep < repeats; rep++) {
+      avg += random_duration[rep];
+    }
+    avg /= repeats;
+
     Serial.print("Random() perf in us (tally=");
     Serial.print(tally);
     Serial.print(", delay (ms)=");
     Serial.print(ir_pause_ms);
+    Serial.print(", avg (us)=");
+    Serial.print(avg, 1);
     Serial.print(") = ");
     for (int rep=0; rep < repeats - 1; rep++) {
       Serial.print(random_duration[rep]);
@@ -72,9 +79,20 @@ void benchmark_random(int repeats, long pauses_ms[]) {
 }
 
 
+void setup() {
+  while (!Serial) {};
+  Serial.begin(115200);
+
+  serial_print_header();
+  Serial.println("None");
+  benchmark_random(REPS_FOR_RANDOM, pauses_ms);
+  Serial.println();
+}
+
+
 // The one-off unseeded benchmark run has already been performed from setup()
 void loop() {
-  Serial.print("Seed=");
+  serial_print_header();
   Serial.println(seed);
   randomSeed(seed);
   benchmark_random(REPS_FOR_RANDOM, pauses_ms);
