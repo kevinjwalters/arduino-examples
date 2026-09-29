@@ -1,5 +1,5 @@
 /*
-  ana-dig-reader v1.3
+  ana-dig-reader v1.5
   Reads analogue and digital values in response to serial commands
 
   Copyright (c) 2024, 2026 Kevin J. Walters
@@ -25,6 +25,7 @@
 
 
 // #define USE_ADC_RAW "unruly"  // for analogRead on all ESP32 family
+// #define NO_FLUSH 1            // to disable BUT->SG serial flushing
 
 
 #ifndef ARDUINO_ARCH_ESP32
@@ -61,7 +62,7 @@
 
 
 const static char *SOFTWARE_NAME = "ana-dig-reader";
-const static char *SOFTWARE_VERSION = "1.3";
+const static char *SOFTWARE_VERSION = "1.5";
 
 const char ANADIG_CMD = 'R';
 const char V_ANA_CMD = 'C';
@@ -84,7 +85,17 @@ const char INFO_CMD = 'I';
 #else
   SoftwareSerial SgButSerial(RX_PIN, TX_PIN);
   #define SERIAL_T SoftwareSerial   // can't use auto for C++14 on R3 :(
+  #define SG_BUT_SERIAL_FLUSH       // do nothing, there is no flush()
 #endif
+
+#if !defined(SG_BUT_SERIAL_FLUSH)
+  #if defined(NO_FLUSH)
+    #define SG_BUT_SERIAL_FLUSH
+  #else
+    #define SG_BUT_SERIAL_FLUSH SgButSerial.flush()
+  #endif
+#endif
+
 
 char tx_buffer[81] = { '\0' };
 int input_analogue[255];
@@ -249,6 +260,7 @@ void loop() {
       (void)snprintf(tx_buffer, sizeof(tx_buffer),
                      "%05d,%u", input_ana, input_dig);
       SgButSerial.println(tx_buffer);
+      SG_BUT_SERIAL_FLUSH;
     } else if (rx_char == V_ANA_CMD) {
       int sample_count = readWithTimeout(SgButSerial, 100 * 1000)  - ' ';
       // Read all the analogue values without any pausing into an array
@@ -265,6 +277,7 @@ void loop() {
         (void)snprintf(tx_buffer, sizeof(tx_buffer),
                        i == (sample_count - 1) ? "%05d\n" : "%05d " , input_ana);
         SgButSerial.print(tx_buffer);
+        SG_BUT_SERIAL_FLUSH;
       }
     } else if (rx_char == INFO_CMD) {
       Serial.println("info cmd");
@@ -289,6 +302,7 @@ void loop() {
                      ADC_RESOLUTION, adc_vref_str, ANALOGUE_PIN,
                      ADC_READ == ADC_RAW ? "raw" : (ADC_READ == ADC_CALIBRATEDMV ? "calibratedmv" : "?"));
       SgButSerial.println(tx_buffer);
+      SG_BUT_SERIAL_FLUSH;
     }
     // TODO - implement the digital commands
   }
